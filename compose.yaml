@@ -1,0 +1,201 @@
+name: oran-portable
+
+services:
+  open5gs:
+    container_name: oran-portable-open5gs
+    image: ${OPEN5GS_IMAGE:-oran-portable-open5gs:v1}
+    privileged: true
+
+    env_file:
+      - ./open5gs/open5gs.env
+
+    command:
+      - 5gc
+      - -c
+      - open5gs-5gc.yml
+
+    volumes:
+      - ./open5gs/subscriber_db.csv:/open5gs/subscriber_db.csv:ro
+      - ./open5gs/add_users.py:/open5gs/add_users.py:ro
+      - ./open5gs/open5gs-5gc.yml.in:/open5gs/open5gs-5gc.yml.in:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.20 7777"]
+      interval: 3s
+      timeout: 1s
+      retries: 60
+
+    networks:
+      ran:
+        ipv4_address: 10.77.0.2
+
+  flexric:
+    container_name: oran-portable-flexric
+    image: ${FLEXRIC_IMAGE:-oran-portable-flexric:v1}
+
+    volumes:
+      - ./config/flexric.conf:/usr/local/etc/flexric/flexric.conf:ro
+
+    networks:
+      ran:
+        ipv4_address: 10.77.0.3
+
+  ns3-ran:
+    container_name: oran-portable-ns3
+    image: ${NS3_IMAGE:-oran-portable-ns3:v1}
+
+    environment:
+      ORAN_RAN_IP: 10.77.0.10
+      ORAN_AMF_IP: 10.77.0.2
+      ORAN_CORE_IP: 10.77.0.2
+
+    depends_on:
+      open5gs:
+        condition: service_healthy
+      flexric:
+        condition: service_started
+
+    command:
+      - bash
+      - -lc
+      - |
+        set -o pipefail
+
+        mkdir -p /telemetry
+
+        : > /logs/runtime-slice.log
+
+        rm -f \
+          /telemetry/energyfilecell*.csv \
+          /telemetry/cu-cp-cell-*.txt \
+          /telemetry/cu-up-cell-*.txt \
+          /telemetry/du-cell-*.txt
+
+        for f in \
+          energyfilecell2.csv \
+          energyfilecell3.csv \
+          energyfilecell4.csv \
+          cu-cp-cell-2.txt \
+          cu-cp-cell-3.txt \
+          cu-cp-cell-4.txt \
+          cu-up-cell-2.txt \
+          cu-up-cell-3.txt \
+          cu-up-cell-4.txt \
+          du-cell-2.txt \
+          du-cell-3.txt \
+          du-cell-4.txt
+        do
+          rm -f "/opt/ns3/$$f"
+          ln -s "/telemetry/$$f" "/opt/ns3/$$f"
+        done
+
+        ./ns3 run "scratch/scenario-zero-slicing --ues=3 --e2TermIp=10.77.0.3 --simTime=180" \
+          2>&1 | tee /logs/runtime-slice.log
+
+    volumes:
+      - ./logs:/logs
+      - ./telemetry:/telemetry
+
+    networks:
+      ran:
+        ipv4_address: 10.77.0.10
+
+  influxdb:
+    container_name: oran-portable-influxdb
+    image: influxdb:1.8-alpine
+
+    environment:
+      INFLUXDB_DB: influx
+      INFLUXDB_ADMIN_USER: admin
+      INFLUXDB_ADMIN_PASSWORD: admin
+
+    ports:
+      - "127.0.0.1:8086:8086"
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - influx -execute 'SHOW DATABASES' >/dev/null 2>&1
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  gui:
+    container_name: oran-portable-gui
+    image: ${GUI_IMAGE:-oran-portable-gui:v1}
+
+    network_mode: host
+
+    depends_on:
+      influxdb:
+        condition: service_healthy
+
+    environment:
+      INFLUXDB_DATABASE: influx
+      INFLUXDB_HOST: 127.0.0.1
+      INFLUXDB_PORT: 8086
+      INFLUXDB_USERNAME: admin
+      INFLUXDB_PASSWORD: admin
+
+      NS3_HOST: 127.0.0.1
+      FLEXRIC_CONTAINER: oran-portable-flexric
+      NS3_CONTAINER: oran-portable-ns3
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  gui-bridge:
+    container_name: oran-portable-gui-bridge
+    image: ${GUI_IMAGE:-oran-portable-gui:v1}
+    restart: unless-stopped
+
+    network_mode: host
+    working_dir: /telemetry
+
+    environment:
+      GUI_SIM_ID: open5gs-slicing-demo
+      GUI_UE_COUNT: 3
+      GUI_BASELINE_DURATION_SEC: 10
+
+    command:
+      - python3
+      - /app/gui_bridge.py
+
+    volumes:
+      - ./telemetry:/telemetry
+
+  gui-pusher:
+    container_name: oran-portable-gui-pusher
+    image: ${GUI_IMAGE:-oran-portable-gui:v1}
+    restart: unless-stopped
+
+    network_mode: host
+    working_dir: /telemetry
+
+    depends_on:
+      influxdb:
+        condition: service_healthy
+
+    environment:
+      INFLUXDB_DATABASE: influx
+      INFLUXDB_HOST: 127.0.0.1
+      INFLUXDB_PORT: 8086
+      INFLUXDB_USERNAME: admin
+      INFLUXDB_PASSWORD: admin
+
+    command:
+      - python3
+      - /app/sim_data_pusher.py
+
+    volumes:
+      - ./telemetry:/telemetry
+
+
+networks:
+  ran:
+    name: oran_portable_ran
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.77.0.0/24
+          gateway: 10.77.0.1

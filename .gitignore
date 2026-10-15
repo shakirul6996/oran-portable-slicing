@@ -1,0 +1,8 @@
+logs/
+telemetry/
+*.log
+.env
+__pycache__/
+docker/
+source/
+scripts/
