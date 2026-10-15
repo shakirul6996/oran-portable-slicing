@@ -1,4 +1,4 @@
-# Portable O-RAN + Open5GS Slicing Demo
+# Portable O-RAN + Open5GS Slicing 
 
 ## Quick Start
 
