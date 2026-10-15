@@ -61,7 +61,7 @@ Slice 2: 30%
 Slice 3: 20%
 ```
 
-## 6. Apply a runtime slicing policy
+## Apply a runtime slicing policy
 
 Enter three ratios whose total is `100`.
 
@@ -97,7 +97,7 @@ Control path:
 GUI -> FlexRIC xApp -> E2SM-RC -> ns-3 gNB
 ```
 
-## 7. Stop the simulation
+##  Stop the simulation
 
 Click **Stop** in the dashboard.
 
