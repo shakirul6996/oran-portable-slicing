@@ -7,9 +7,9 @@ OS: Ubuntu Linux
 Architecture: x86_64
 Docker: Docker Engine with Docker Compose v2
 Kernel support: SCTP enabled
-
-**## Quick Start**
-
+```
+## Quick Start
+```
 Clone the repository:
 
     git clone https://github.com/shakirul6996/oran-portable-slicing.git
@@ -26,7 +26,7 @@ Start the simulator:
 The dashboard opens automatically at:
 
     http://127.0.0.1:8000
-
+```
 ## Components
 
 - ns-3 mmWave/LENA
