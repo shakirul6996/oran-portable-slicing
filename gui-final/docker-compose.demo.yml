@@ -1,0 +1,59 @@
+services:
+
+  flexric:
+    image: flexric-snapshot:307e1d0a
+    network_mode: host
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nsoran:
+    image: nsoran-snapshot:0ae720c9
+    network_mode: host
+    volumes:
+      - ../:/simulation
+    depends_on:
+      - flexric
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  pusher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    network_mode: host
+    working_dir: /simulation
+    command: ["python3", "sim_data_pusher.py"]
+    volumes:
+      - ../:/simulation
+    depends_on:
+      - influxdb
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  xapp-dev:
+    image: flexric-xapp-dev:v1
+    network_mode: host
+    depends_on:
+      - flexric
+    working_dir: /home/shakirul/flexric
+    volumes:
+      - ${HOME}/oran-xapp-workspace/flexric:/home/shakirul/flexric
+      - ${HOME}/oran-xapp-workspace/custom-xapps:/workspace/custom-xapps
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

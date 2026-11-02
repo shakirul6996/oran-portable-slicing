@@ -1,0 +1,101 @@
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc-10 \
+    g++-10 \
+    cmake \
+    ninja-build \
+    python3 \
+    python3-dev \
+    pkg-config \
+    git \
+    libsctp-dev \
+    lksctp-tools \
+    libboost-all-dev \
+    libsqlite3-dev \
+    libxml2-dev \
+    libgsl-dev \
+    libeigen3-dev \
+    autoconf \
+    automake \
+    libtool \
+    bison \
+    flex \
+    dpkg-dev \
+    ca-certificates \
+    iproute2 \
+    iputils-ping \
+    net-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV CC=gcc-10
+ENV CXX=g++-10
+
+
+# ============================================================
+# E2Sim dependency used by ns-3 O-RAN interface
+# ============================================================
+
+COPY source/e2sim-kpmv3-working.tar.gz /tmp/e2sim.tar.gz
+
+RUN tar -xzf /tmp/e2sim.tar.gz -C /opt \
+ && rm /tmp/e2sim.tar.gz \
+ && rm -rf /opt/e2sim-kpmv3/e2sim/build \
+ && cmake \
+      -S /opt/e2sim-kpmv3/e2sim \
+      -B /opt/e2sim-kpmv3/e2sim/build \
+      -DDEV_PKG=1 \
+      -DLOG_LEVEL=2 \
+ && cmake --build \
+      /opt/e2sim-kpmv3/e2sim/build \
+      --target package \
+      -j 4 \
+ && dpkg --install \
+      /opt/e2sim-kpmv3/e2sim/build/e2sim-dev_*_amd64.deb \
+ && ldconfig \
+ && test -f /usr/local/include/e2sim/OCTET_STRING.h \
+ && test -f /usr/local/include/e2sim/E2SM-KPM-RANfunction-Description.h \
+ && test -f /usr/local/include/e2sim/E2SM-RC-RANFunctionDefinition.h \
+ && test -f /usr/local/lib/libe2sim.a \
+ && echo "[PASS] E2Sim installed" \
+ && rm -rf /opt/e2sim-kpmv3
+
+# OpenSSL headers required by open5gs-n2-client.cc
+RUN apt-get update  && apt-get install -y --no-install-recommends libssl-dev  && rm -rf /var/lib/apt/lists/*
+
+
+# ============================================================
+# ns-3 / mmWave-LENA / O-RAN
+# ============================================================
+
+COPY source/ns3-mmwave-working.tar.gz /tmp/ns3.tar.gz
+
+RUN mkdir -p /opt \
+ && tar -xzf /tmp/ns3.tar.gz -C /opt \
+ && mv /opt/mmwave-LENA-oran /opt/ns3 \
+ && rm /tmp/ns3.tar.gz
+
+COPY source/ns3-updates/ /opt/ns3/
+
+WORKDIR /opt/ns3
+
+RUN ./ns3 configure \
+ && cmake --build cmake-cache \
+      --target scratch_scenario-zero-slicing \
+      -j 4 \
+ && test -n "$(find build/scratch -maxdepth 1 \
+      -type f \
+      -name '*scenario-zero-slicing*' \
+      -perm -111 \
+      -print -quit)" \
+ && echo "[PASS] scenario-zero-slicing built"
+
+
+ENV ORAN_RAN_IP=10.77.0.10
+ENV ORAN_AMF_IP=10.77.0.2
+ENV ORAN_CORE_IP=10.77.0.2
+
+CMD ["bash"]

@@ -3,7 +3,7 @@ name: oran-portable
 services:
   open5gs:
     container_name: oran-portable-open5gs
-    image: ${OPEN5GS_IMAGE:-oran-portable-open5gs:v1}
+    image: ${OPEN5GS_IMAGE:-shakirulewu/oran-portable:open5gs-v1}
     privileged: true
 
     env_file:
@@ -31,7 +31,7 @@ services:
 
   flexric:
     container_name: oran-portable-flexric
-    image: ${FLEXRIC_IMAGE:-oran-portable-flexric:v1}
+    image: ${FLEXRIC_IMAGE:-shakirulewu/oran-portable:flexric-v1}
 
     volumes:
       - ./config/flexric.conf:/usr/local/etc/flexric/flexric.conf:ro
@@ -42,7 +42,8 @@ services:
 
   ns3-ran:
     container_name: oran-portable-ns3
-    image: ${NS3_IMAGE:-oran-portable-ns3:v1}
+    image: ${NS3_IMAGE:-shakirulewu/oran-portable:ns3-final}
+    entrypoint: []
 
     environment:
       ORAN_RAN_IP: 10.77.0.10
@@ -60,6 +61,9 @@ services:
       - -lc
       - |
         set -o pipefail
+        . /runtime-config/simulation.env
+        : "$${N_UES:?Missing N_UES}"
+        : "$${SIM_TIME:?Missing SIM_TIME}"
 
         mkdir -p /telemetry
 
@@ -71,28 +75,19 @@ services:
           /telemetry/cu-up-cell-*.txt \
           /telemetry/du-cell-*.txt
 
-        for f in \
-          energyfilecell2.csv \
-          energyfilecell3.csv \
-          energyfilecell4.csv \
-          cu-cp-cell-2.txt \
-          cu-cp-cell-3.txt \
-          cu-cp-cell-4.txt \
-          cu-up-cell-2.txt \
-          cu-up-cell-3.txt \
-          cu-up-cell-4.txt \
-          du-cell-2.txt \
-          du-cell-3.txt \
-          du-cell-4.txt
-        do
-          rm -f "/opt/ns3/$$f"
-          ln -s "/telemetry/$$f" "/opt/ns3/$$f"
+        for cell in $$(seq 2 $$((N_GNBS + 1))); do
+          for f in             "energyfilecell$${cell}.csv"             "cu-cp-cell-$${cell}.txt"             "cu-up-cell-$${cell}.txt"             "du-cell-$${cell}.txt"
+          do
+            rm -f "/opt/ns3/$$f"
+            ln -s "/telemetry/$$f" "/opt/ns3/$$f"
+          done
         done
 
-        ./ns3 run "scratch/scenario-zero-slicing --ues=3 --e2TermIp=10.77.0.3 --simTime=180" \
+        ./ns3 run "scratch/scenario-zero-slicing --ues=$${N_UES} --simTime=$${SIM_TIME} --e2TermIp=10.77.0.3 --N_MmWaveEnbNodes=$${N_GNBS} --Bandwidth=$${BANDWIDTH} --CenterFrequency=$${FREQUENCY} --IntersideDistanceCells=$${CELL_DISTANCE} --IntersideDistanceUEs=$${UE_DISTANCE} --N_AntennasMcUe=$${UE_ANTENNAS} --N_AntennasMmWave=$${GNB_ANTENNAS} --hoSinrDifference=$${HO_SINR} --indicationPeriodicity=$${E2_PERIOD}" \
           2>&1 | tee /logs/runtime-slice.log
 
     volumes:
+      - ./runtime-config:/runtime-config:ro
       - ./logs:/logs
       - ./telemetry:/telemetry
 
@@ -122,7 +117,7 @@ services:
 
   gui:
     container_name: oran-portable-gui
-    image: ${GUI_IMAGE:-oran-portable-gui:v1}
+    image: ${GUI_IMAGE:-shakirulewu/oran-portable:gui-final}
 
     network_mode: host
 
@@ -143,10 +138,13 @@ services:
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./runtime-config:/runtime-config
+      - ./gui-overrides/data_controller.py:/app/src/http/data_controller.py:ro
+      - ./gui-overrides/simulation.py:/app/src/simulation_objects/simulation.py:ro
 
   gui-bridge:
     container_name: oran-portable-gui-bridge
-    image: ${GUI_IMAGE:-oran-portable-gui:v1}
+    image: ${GUI_IMAGE:-shakirulewu/oran-portable:gui-final}
     restart: unless-stopped
 
     network_mode: host
@@ -162,11 +160,14 @@ services:
       - /app/gui_bridge.py
 
     volumes:
+      - ./runtime-config:/runtime-config:ro
+      - ./logs:/runtime-logs:ro
+      - ./gui-overrides/gui_bridge.py:/app/gui_bridge.py:ro
       - ./telemetry:/telemetry
 
   gui-pusher:
     container_name: oran-portable-gui-pusher
-    image: ${GUI_IMAGE:-oran-portable-gui:v1}
+    image: ${GUI_IMAGE:-shakirulewu/oran-portable:gui-final}
     restart: unless-stopped
 
     network_mode: host
@@ -189,6 +190,7 @@ services:
 
     volumes:
       - ./telemetry:/telemetry
+      - ./gui-overrides/sim_data_pusher.py:/app/sim_data_pusher.py:ro
 
 
 networks:

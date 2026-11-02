@@ -6,3 +6,6 @@ __pycache__/
 docker/
 source/
 scripts/
+
+# Local credentials
+/gui-final/configuration.env

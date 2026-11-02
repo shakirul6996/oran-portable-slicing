@@ -1,0 +1,2967 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ns-O-RAN-FlexRIC + Open5GS Dashboard</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background-color: #0d0d0d;
+            color: #ff8c00;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        #main-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #form-buttons {
+            margin: 0 auto;
+        }
+
+        #form-container {
+            display: none;
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        #simulationForm {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        #simulationForm label {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        #simulationForm input, #simulationForm select {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background: #333;
+            color: #ff8c00;
+            width: 100%;
+        }
+
+        #form-toggle-button {
+            background: #ff8c00;
+            color: #1a1a1a;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #tab-container {
+            display: flex;
+            background: #1a1a1a;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            padding: 5px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            color: #ff8c00;
+            background: #333;
+            border-radius: 5px;
+            margin: 0 5px;
+        }
+
+        .tab-button.active {
+            background: #ff8c00;
+            color: #1a1a1a;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chart-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #chart-content canvas {
+            width: 100%;
+            height: 100%;
+            max-height: 80vh;
+            max-width: 100%;
+        }
+
+        #data-content {
+            flex: 1.2;
+        }
+
+        #es-content {
+            flex: 1.2;
+        }
+
+        .es-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            height: 100%;
+        }
+
+        .es_charts_left {
+            flex: 85;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .es_charts_right {
+            flex: 15;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .es_subchart_div {
+            height: 220px;
+        }
+
+        .data-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .data-section {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h3 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .scrollable-data {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            border: 1px solid #ccc;
+            overflow-y: auto;
+            background: #1a1a1a;
+            padding: 10px;
+        }
+
+        .object-box {
+            border: 1px solid #ff8c00;
+            padding: 10px;
+            background-color: #1a1a1a;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .value {
+            color: lightblue;
+        }
+
+        .custom-legend.horizontal {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            overflow-x: auto;
+        }
+
+        .custom-legend.vertical {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .legend-item {
+            margin: 5px;
+        }
+
+        .legend-color-box {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .legend-text {
+            vertical-align: middle;
+        }
+
+        #simulationForm button {
+            grid-column: span 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background: #ff8c00;
+            color: #1a1a1a;
+            cursor: pointer;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        #loading-icon {
+            display: none;
+            color: #ff8c00;
+            font-size: 24px;
+        }
+
+        #simulationForm button {
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background: #ff8c00;
+            color: #1a1a1a;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        #simulationForm button:active {
+            background: #e07b00;
+        }
+
+        #simulationForm button:disabled {
+            background: #4d4d4d;
+            color: #7a7a7a;
+            cursor: not-allowed;
+        }
+
+        #toggleButton {
+            background: #ff8c00;
+            color: #1a1a1a;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 10px;
+
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px;
+            background-color: black;
+            color: white;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+
+        .row-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .label-row,
+        .input-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .label-row label {
+            font-family: "Arial", sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .label-row label,
+        .input-row input {
+            flex: 1;
+            text-align: left;
+        }
+
+        .input-row input {
+            padding: 10px;
+            font-size: 14px;
+            color: #ff8c00;
+            background: #333;
+            border: none;
+            font-family: "Arial", sans-serif;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .button-row button {
+            flex: 1;
+            padding: 10px 15px;
+            cursor: pointer;
+            background: #ff8c00;
+            color: #1a1a1a;
+            border: none
+        }
+
+
+        .button-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .button-row button {
+            flex: 1;
+            padding: 10px 15px;
+            cursor: pointer;
+            background: #ff8c00;
+            color: #1a1a1a;
+            border: none
+        }
+
+        .button-row-post {
+            display: flex;
+            gap: 20px;
+        }
+
+        .button-row-post button {
+            flex: 1;
+            padding: 10px 15px;
+            cursor: pointer;
+            background: orange;
+            color: black;
+            border: none;
+            font-family: "Arial", sans-serif;
+            font-weight: bold;
+        }
+
+        .button-row-get {
+            display: flex;
+            gap: 20px;
+        }
+
+        .button-row-get button {
+            flex: 1;
+            padding: 10px 15px;
+            cursor: pointer;
+            background: dodgerblue;
+            color: black;
+            border: none;
+            font-family: "Arial", sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .frame-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .response-frame {
+            flex: 1;
+            padding: 10px;
+            background-color: #333;
+            min-height: 100px;
+            text-align: left;
+            word-wrap: break-word;
+            border: none;
+            font-family: "Arial", sans-serif;
+            font-size: 14px;
+            color: white;
+        }
+
+        .put-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .put-row label {
+            font-weight: bold;
+        }
+
+        .put-row input,
+        .put-row textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+            color: #ff8c00;
+            background: #333;
+            border: none;
+            font-family: "Arial", sans-serif;
+        }
+
+        .put-row button {
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .space_in_form {
+            height: 5px;
+            width: 110%;
+            background-color: #ff8c00;
+        }
+
+        .last_space_in_form {
+            height: 5px;
+            background-color: #ff8c00;
+        }
+
+        /* === OPEN5GS WHITE THEME === */
+
+        :root {
+            --page-bg: #F7F9FC;
+            --card-bg: #FFFFFF;
+            --border: #E5E7EB;
+            --text: #111827;
+            --muted: #6B7280;
+            --blue: #2563EB;
+            --violet: #7C3AED;
+            --green: #16A34A;
+            --orange: #EA580C;
+            --red: #DC2626;
+        }
+
+        body, html {
+            background: var(--page-bg) !important;
+            color: var(--text) !important;
+        }
+
+        #main-container {
+            background: var(--page-bg);
+            gap: 12px;
+            padding: 14px;
+        }
+
+        #form-container,
+        #tab-container,
+        .tab-content,
+        .custom-legend.horizontal,
+        .custom-legend.vertical,
+        .scrollable-data,
+        .object-box,
+        .container,
+        .response-frame {
+            background: var(--card-bg) !important;
+            color: var(--text) !important;
+            border: 1px solid var(--border) !important;
+            box-shadow: 0 3px 12px rgba(15, 23, 42, 0.06) !important;
+        }
+
+        #form-container,
+        #tab-container,
+        .tab-content,
+        .custom-legend.horizontal,
+        .custom-legend.vertical {
+            border-radius: 12px !important;
+        }
+
+        .tab-button {
+            background: #F1F5F9 !important;
+            color: #475569 !important;
+            border: 1px solid transparent;
+            font-weight: 600;
+            transition: all .2s ease;
+        }
+
+        .tab-button.active {
+            background: #EFF6FF !important;
+            color: var(--blue) !important;
+            border-color: #BFDBFE !important;
+        }
+
+        #form-toggle-button,
+        #toggleButton {
+            background: #FFFFFF !important;
+            color: #334155 !important;
+            border: 1px solid var(--border) !important;
+            font-weight: 600;
+        }
+
+        #simulationForm input,
+        #simulationForm select,
+        .input-row input,
+        .put-row input,
+        .put-row textarea {
+            background: #F8FAFC !important;
+            color: var(--text) !important;
+            border: 1px solid #CBD5E1 !important;
+        }
+
+        #simulationForm button {
+            background: var(--blue) !important;
+            color: white !important;
+        }
+
+        .object-box {
+            border-radius: 10px !important;
+        }
+
+        .value {
+            color: var(--blue) !important;
+            font-weight: 600;
+        }
+
+        h3, label, .legend-text {
+            color: var(--text);
+        }
+
+        .space_in_form,
+        .last_space_in_form {
+            background: #E2E8F0 !important;
+        }
+
+        /* Top experiment status cards */
+
+        #experiment-header {
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            box-shadow: 0 3px 12px rgba(15, 23, 42, 0.06);
+        }
+
+        .experiment-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .experiment-title h2 {
+            margin: 0;
+            color: #0F172A;
+            font-size: 21px;
+        }
+
+        .experiment-title span {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .status-card {
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            padding: 11px 13px;
+            background: #FFFFFF;
+            min-width: 0;
+        }
+
+        .status-card-title {
+            color: #64748B;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            margin-bottom: 7px;
+        }
+
+        .status-main {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: #0F172A;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .status-sub {
+            margin-top: 5px;
+            color: #64748B;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #94A3B8;
+            box-shadow: 0 0 0 3px rgba(148,163,184,.14);
+        }
+
+        .status-dot.ok {
+            background: var(--green);
+            box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+        }
+
+        .status-dot.warn {
+            background: var(--orange);
+            box-shadow: 0 0 0 3px rgba(234,88,12,.12);
+        }
+
+        #energy-saving-value {
+            color: var(--green);
+            font-size: 19px;
+        }
+
+        #cell-off-badge {
+            display: inline-block;
+            margin-left: 7px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: #FFF7ED;
+            color: var(--orange);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        @media (max-width: 1000px) {
+            .status-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+
+        /* === LIVE OPEN5GS STATUS FIX === */
+
+        #simid_label {
+            color: #0F172A !important;
+            font-weight: 700;
+        }
+
+        #label_between_status_and_simid {
+            color: #475569 !important;
+        }
+
+        #status_label {
+            color: #0F172A !important;
+            font-weight: 600;
+        }
+
+
+        /* === PROJECTOR HIGH CONTRAST THEME === */
+
+        :root {
+            --page-bg: #EEF3F8;
+            --card-bg: #FFFFFF;
+            --border: #CBD5E1;
+            --text: #0F172A;
+            --muted: #475569;
+
+            --blue: #0B5ED7;
+            --violet: #6D28D9;
+            --green: #15803D;
+            --orange: #EA580C;
+            --red: #DC2626;
+        }
+
+        body, html,
+        #main-container {
+            background: #EEF3F8 !important;
+            color: #0F172A !important;
+        }
+
+        #experiment-header,
+        #form-container,
+        #tab-container,
+        .tab-content,
+        .status-card,
+        .object-box,
+        .scrollable-data {
+            background: #FFFFFF !important;
+            border-color: #CBD5E1 !important;
+        }
+
+        #experiment-header {
+            border: 2px solid #CBD5E1 !important;
+        }
+
+        .experiment-title h2 {
+            color: #0F172A !important;
+            font-weight: 800 !important;
+            font-size: 23px !important;
+        }
+
+        .experiment-title span {
+            color: #475569 !important;
+            font-weight: 600;
+        }
+
+        .status-card {
+            border: 1.5px solid #CBD5E1 !important;
+            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        .status-card-title {
+            color: #334155 !important;
+            font-weight: 800 !important;
+        }
+
+        .status-main {
+            color: #0F172A !important;
+            font-weight: 800 !important;
+        }
+
+        .status-sub {
+            color: #475569 !important;
+            font-weight: 500;
+        }
+
+        .status-card:nth-child(1) {
+            border-top: 4px solid #15803D !important;
+        }
+
+        .status-card:nth-child(2) {
+            border-top: 4px solid #0B5ED7 !important;
+        }
+
+        .status-card:nth-child(3) {
+            border-top: 4px solid #6D28D9 !important;
+        }
+
+        .status-card:nth-child(4) {
+            border-top: 4px solid #15803D !important;
+        }
+
+        .tab-button {
+            background: #E2E8F0 !important;
+            color: #1E293B !important;
+            font-weight: 700 !important;
+            border: 1px solid #CBD5E1 !important;
+        }
+
+        .tab-button.active {
+            background: #DBEAFE !important;
+            color: #0B5ED7 !important;
+            border: 2px solid #60A5FA !important;
+        }
+
+        #form-toggle-button,
+        #toggleButton {
+            background: #FFFFFF !important;
+            color: #0F172A !important;
+            border: 1.5px solid #94A3B8 !important;
+        }
+
+        #simulationForm input,
+        #simulationForm select {
+            background: #FFFFFF !important;
+            color: #0F172A !important;
+            border: 1.5px solid #94A3B8 !important;
+        }
+
+        #simulationForm button {
+            background: #2563EB !important;
+            color: #FFFFFF !important;
+            font-weight: 800 !important;
+        }
+
+        #simulationForm label {
+            color: #0F172A !important;
+            font-weight: 700 !important;
+        }
+
+        #status_label,
+        #simid_label,
+        #label_between_status_and_simid {
+            color: #0F172A !important;
+        }
+
+        #energy-saving-value {
+            color: #15803D !important;
+            font-weight: 900 !important;
+        }
+
+</style>
+</head>
+<body>
+<div id="main-container">
+
+    <div id="experiment-header">
+        <div class="experiment-title">
+            <h2>ns-O-RAN-FlexRIC + Open5GS Dashboard</h2>
+            <span>Integrated RAN · Near-RT RIC · 5G Core · Energy Saving</span>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-card">
+                <div class="status-card-title">Open5GS 5GC</div>
+                <div class="status-main">
+                    <span class="status-dot" id="core-dot"></span>
+                    <span id="core-status">Waiting</span>
+                </div>
+                <div class="status-sub" id="core-detail">
+                    Waiting for core telemetry
+                </div>
+            </div>
+
+            <div class="status-card">
+                <div class="status-card-title">N2 / NGAP</div>
+                <div class="status-main">
+                    <span class="status-dot" id="n2-dot"></span>
+                    <span id="n2-status">Waiting</span>
+                </div>
+                <div class="status-sub">
+                    gNB ↔ AMF · SCTP / NGAP
+                </div>
+            </div>
+
+            <div class="status-card">
+                <div class="status-card-title">N3 / GTP-U</div>
+                <div class="status-main">
+                    <span class="status-dot" id="n3-dot"></span>
+                    <span id="n3-status">Waiting</span>
+                </div>
+                <div class="status-sub">
+                    gNB ↔ UPF · User Plane
+                </div>
+            </div>
+
+            <div class="status-card">
+                <div class="status-card-title">Energy Saving</div>
+                <div class="status-main">
+                    <span id="energy-saving-value">--</span>
+                    <span id="cell-off-badge">Monitoring</span>
+                </div>
+                <div class="status-sub" id="energy-detail">
+                    Waiting for ES telemetry
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="form-buttons">
+        <button id="form-toggle-button">Show simulation setup</button>
+        <button id="toggleButton">Show A1 policy manager</button>
+    </div>
+    <div id="form-container">
+        <form id="simulationForm">
+            <div>
+                <div style="display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <label for="flexric">Connect to FlexRIC: (If true, FlexRIC need to be running) </label>
+                        <input type="checkbox" id="flexric" name="flexric" value="true"
+                               style="transform: scale(1.5); margin-left: 0;">
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <label for="e2TermIp" style="margin-right: 8px; width: 100px;">e2TermIp:</label>
+                        <input type="text" id="e2TermIp" name="e2TermIp" value="127.0.0.1" disabled
+                               style="flex: 1; background-color: lightgray;">
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label for="hoSinrDifference">hoSinrDifference (dB):</label>
+                <input type="number" id="hoSinrDifference" name="hoSinrDifference" value="3" step="">
+            </div>
+            <div>
+                <label for="indicationPeriodicity">indicationPeriodicity (s):</label>
+                <input type="number" id="indicationPeriodicity" name="indicationPeriodicity" value="0.1" step="">
+            </div>
+            <div>
+                <label for="simTime">simTime (s):</label>
+                <input type="number" id="simTime" name="simTime" value="10">
+            </div>
+            <div>
+                <label for="KPM_E2functionID">KPM_E2functionID:</label>
+                <input type="number" id="KPM_E2functionID" name="KPM_E2functionID" value="2">
+            </div>
+            <div>
+                <label for="RC_E2functionID">RC_E2functionID:</label>
+                <input type="number" id="RC_E2functionID" name="RC_E2functionID" value="3">
+            </div>
+            <div>
+                <label for="N_MmWaveEnbNodes">N_MmWaveEnbNodes:</label>
+                <input type="number" id="N_MmWaveEnbNodes" name="N_MmWaveEnbNodes" value="3">
+            </div>
+            <!--<div>
+                <label for="N_LteEnbNodes">N_LteEnbNodes:</label>
+                <input type="number" id="N_LteEnbNodes" name="N_LteEnbNodes" value="1">
+            </div> -->
+            <div>
+                <label for="N_Ues">N_Ues:</label>
+                <input type="number" id="N_Ues" name="N_Ues" value="5">
+            </div>
+            <div>
+                <label for="CenterFrequency">CenterFrequency (Hz):</label>
+                <input type="number" id="CenterFrequency" name="CenterFrequency" value="3.5e9" step="">
+            </div>
+            <div>
+                <label for="Bandwidth">Bandwidth (Hz):</label>
+                <input type="number" id="Bandwidth" name="Bandwidth" value="20e6" step="">
+            </div>
+            <!--<div>
+                <label for="N_AntennasMcUe">N_AntennasMcUe:</label>
+                <input type="number" id="N_AntennasMcUe" name="N_AntennasMcUe" value="">
+            </div>
+            <div>
+                <label for="N_AntennasMmWave">N_AntennasMmWave:</label>
+                <input type="number" id="N_AntennasMmWave" name="N_AntennasMmWave" value="">
+            </div> -->
+            <div>
+                <label for="IntersideDistanceUEs">IntersideDistanceUEs (m):</label>
+                <input type="number" id="IntersideDistanceUEs" name="IntersideDistanceUEs" value="500">
+            </div>
+            <div>
+                <label for="IntersideDistanceCells">IntersideDistanceCells (m):</label>
+                <input type="number" id="IntersideDistanceCells" name="IntersideDistanceCells" value="600">
+            </div>
+            <div>
+                <div>
+                    <label for="scenario">Scenario: (refresh page to get scenario list)</label>
+                    <select id="scenario" name="scenario" onchange="setFlags()">
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; margin-bottom: 0px;">
+                    <label for="flags">Scenario&nbsp;flags: </label>
+                    <input type="checkbox" id="flags" name="flags" value="true" style="transform: scale(1.5); margin-left: 0;">
+                </div>
+            </div>
+            <button type="button" onclick="sendForm('/start_simulation')" id="start_button">Start new</button>
+            <button type="button" onclick="stopSim('/stop_simulation')" id="stop_button" disabled>Stop</button>
+            <button type="button" onclick="resetSim('/reset_simulation')" id="reset_button">Reset</button>
+            <div>
+                <label>Status: </label>
+                <label id="status_label" style="text-align: center">off </label>
+                <label id="label_between_status_and_simid"></label>
+                <label id="simid_label" style="text-align: center; color: white"></label>
+            </div>
+            <div><label id="warning_label"></label></div>
+            <div></div>
+            <div></div>
+            <div class="space_in_form"></div>
+            <div class="space_in_form"></div>
+            <div class="space_in_form"></div>
+            <div class="last_space_in_form"></div>
+            <div>
+                <label style="font-size: 30px; font-weight: bold">Cell energy states management: </label>
+            </div>
+            <div>
+                <center>
+                    <label>ES status: </label>
+                    <label id="es_status_label">off</label>
+                </center>
+            </div>
+            <button type="button" onclick="startEs()" style="background-color: green" id="set_es_button">Turn ES xApp
+                on
+            </button>
+            <button type="button" onclick="stopEs()" style="background-color: olive" id="set_es_button">Turn ES xApp
+                off
+            </button>
+        </form>
+    </div>
+    <div id="frameContainer" class="hidden">
+        <div class="container">
+            <!-- GET Inputs and Buttons Row -->
+            <div class="row-container">
+                <div class="label-row">
+                    <label for="param1">policy_type_id:</label>
+                </div>
+                <div class="input-row">
+                    <input id="param1" placeholder="Enter policy_type_id to fetch or create:"/>
+                </div>
+                <div class="label-row">
+                    <label for="param2">policy_instance_id:</label>
+                </div>
+                <div class="input-row">
+                    <input id="param2" placeholder="Enter policy_instance_id to fetch or create:"/>
+                </div>
+            </div>
+            <div class="button-row-get">
+                <button id="fetchData1" class="blue-button">GET policy_type_id list</button>
+                <button id="fetchData2" class="blue-button">GET JSON body of policy_type_id from "policy_type_id:"
+                    field
+                </button>
+                <button id="fetchData3" class="blue-button">GET policy_instance_id list</button>
+                <button id="fetchData4" class="blue-button">GET JSON body of policy_instance_id from "policy_instance_id
+                    id:" field
+                </button>
+            </div>
+
+            <!-- GET Response Frames Row -->
+            <div class="frame-row">
+                <div id="response1" class="response-frame">Return current policy_type_id list.</div>
+                <div id="response2" class="response-frame">Return JSON body of chosen policy_type_id.<br>
+                    "policy_type_id:" must be fulfilled.
+                </div>
+                <div id="response3" class="response-frame">Return current policy_instance_id list.<br> "policy_type_id:"
+                    must be fulfilled.
+                </div>
+                <div id="response4" class="response-frame">Return JSON body of chosen policy_instance_id. <br>
+                    "policy_type_id:" and "policy_instance_id:" must be fulfilled.
+                </div>
+            </div>
+            <div class="put-row">
+                <textarea id="putJson1" placeholder="Enter JSON payload for new policy_type_id creation:"></textarea>
+                <textarea id="putJson2"
+                          placeholder="Enter JSON payload for new policy_instance_id creation:"></textarea>
+            </div>
+
+            <!-- PUT Rows -->
+            <div class="button-row-post">
+                <button id="sendPut1">PUT policy_type_id (with id from field "policy_type_id:" and JSON body inputed
+                    above)
+                </button>
+                <button id="sendPut2">PUT policy_instance_id (with id from field "policy_instance_id:" and JSON body
+                    inputed above)
+                </button>
+            </div>
+            <div class="frame-row">
+                <div id="putResponse1" class="response-frame">
+                    <span style="color: orange;">Example policy_type_id JSON payload: </span><br>
+                    <pre>
+{
+    "name": "es_policy",
+    "description": "Simplified - O-RAN standard Energy saving policy",
+    "policy_type_id": 10000,
+    "create_schema": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+            "cellID": {
+                "type": "integer",
+                "default": 0
+            },
+            "ES_State": {
+                "type": "bool",
+                "default": false
+            }
+        },
+        "additionalProperties": false
+    }
+}
+    </pre>
+                </div>
+                <div id="putResponse2" class="response-frame">
+                    <span style="color: orange;">Example policy_instance_id JSON payload:</span> <br>
+                    <pre>
+    {
+        "cellID": 10,
+        "ES_State": true
+    }
+    </pre>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div id="tab-container">
+        <div id="chart-tab" class="tab-button active">Observe simulation grid</div>
+        <div id="data-tab" class="tab-button">Observe KPIs</div>
+        <div id="es-tab" class="tab-button">Observe ES</div>
+        <div id="slicing-tab" class="tab-button">Slicing</div>
+    </div>
+
+    <div id="slicing-content" class="tab-content">
+        <div class="data-container">
+            <div class="data-section">
+                <h3>Runtime Slicing Control</h3>
+
+                <div class="object-box">
+                    <h4>Target PRB Ratio</h4>
+
+                    <p>
+                        Slice 1:
+                        <input id="slice1-target"
+                               type="number"
+                               min="30"
+                               max="70"
+                               value="50"
+                               style="width:70px;">
+                        %
+                        <span style="color:#aaa;">(30-70)</span>
+                    </p>
+
+                    <p>
+                        Slice 2:
+                        <input id="slice2-target"
+                               type="number"
+                               min="20"
+                               max="50"
+                               value="30"
+                               style="width:70px;">
+                        %
+                        <span style="color:#aaa;">(20-50)</span>
+                    </p>
+
+                    <p>
+                        Slice 3:
+                        <input id="slice3-target"
+                               type="number"
+                               min="10"
+                               max="30"
+                               value="20"
+                               style="width:70px;">
+                        %
+                        <span style="color:#aaa;">(10-30)</span>
+                    </p>
+
+                    <p>
+                        Total:
+                        <span id="slice-total" class="value">100%</span>
+                    </p>
+
+                    <button id="apply-slice-policy"
+                            type="button"
+                            style="padding:8px 16px; cursor:pointer;">
+                        Apply Policy
+                    </button>
+
+                    <p id="slice-control-message"
+                       style="margin-top:10px; color:#aaa;">
+                        Ready
+                    </p>
+                </div>
+            </div>
+
+            <div class="data-section">
+                <h3>xApp / E2 Status</h3>
+
+                <div class="object-box">
+                    <p>E2 nodes:
+                        <span id="slice-e2-nodes" class="value">--</span>
+                    </p>
+                    <p>Control ACKs:
+                        <span id="slice-acks" class="value">--</span>
+                    </p>
+                    <p>Last policy:
+                        <span id="slice-last-policy" class="value">--</span>
+                    </p>
+                    <p>Status:
+                        <span id="slice-status" class="value">Not applied</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="data-section">
+                <h3>Current Slice Policy Budget</h3>
+                <div class="object-box">
+                    <p>Slice 1 RB budget:
+                        <span id="slice1-budget-rb"
+                              class="value">--</span>
+                    </p>
+
+                    <p>Slice 2 RB budget:
+                        <span id="slice2-budget-rb"
+                              class="value">--</span>
+                    </p>
+
+                    <p>Slice 3 RB budget:
+                        <span id="slice3-budget-rb"
+                              class="value">--</span>
+                    </p>
+
+                    <p>Total RB:
+                        <span id="slice-total-rb"
+                              class="value">--</span>
+                    </p>
+
+                    <p>Scheduled symbols:
+                        <span id="slice-symbol-allocation"
+                              class="value">-- / -- / --</span>
+                    </p>
+
+                    <p style="color:#aaa;">
+                        Current RB budget derived from the applied slice policy.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chart-content" class="tab-content active">
+        <canvas id="myChart"></canvas>
+        <div id="chart-legend" class="custom-legend"></div>
+    </div>
+    <div id="data-content" class="tab-content">
+        <div class="data-container">
+            <div class="data-section">
+                <h3>UE Data</h3>
+                <div id="ueSourceData" class="scrollable-data"></div>
+            </div>
+            <div class="data-section">
+                <h3>Cell Data</h3>
+                <div id="cellSourceData" class="scrollable-data"></div>
+            </div>
+        </div>
+    </div>
+    <div id="es-content" class="tab-content">
+        <div class="data-container">
+            <div class="es_charts_left">
+                <div class="es_subchart_div" style="height: 140px">
+                    <canvas id="es-mode-chart"></canvas>
+                </div>
+                <div class="es_subchart_div">
+                    <canvas id="sinr-chart"></canvas>
+                </div>
+                <div class="es_subchart_div">
+                    <canvas id="retx-chart"></canvas>
+                </div>
+                <div class="es_subchart_div">
+                    <canvas id="prb-usage-chart"></canvas>
+                </div>
+                <div style="display: flex; justify-content: center; align-items: center; text-align: center;">
+                    <label style="font-size: 20px; font-weight: bold; color: white;">
+                        Dots on plot represent UEs cell allocation (DOT color = CELL color), line colors represent
+                        unique UEs
+                    </label>
+                </div>
+            </div>
+            <div class="es_charts_right">
+                <canvas id="es_diff"></canvas>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    var defaultScenario = "scratch/scenario-zero-with_parallel_loging.cc";
+    var defaultScenario_nr = "scratch/orange-rf-channel-reconfiguration.cc";
+
+    const host_ns3 = "{{ host_ns3 }}";
+    document.getElementById('flexric').addEventListener('change', function () {
+        var e2TermIpField = document.getElementById('e2TermIp');
+        if (this.checked) {
+            e2TermIpField.disabled = false;
+            e2TermIpField.style.backgroundColor = "";
+        } else {
+            e2TermIpField.disabled = true;
+            e2TermIpField.value = "127.0.0.1";
+            e2TermIpField.style.backgroundColor = "lightgray";
+        }
+    });
+
+
+    var ctx = document.getElementById('myChart').getContext('2d');
+
+    var myChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: 'UEs',
+                    data: [],
+                    backgroundColor: [],
+                    borderWidth: 1,
+                    pointRadius: 6,
+                    pointStyle: 'circle',
+                    datalabels: {
+                        align: 'top',
+                        color: '#ff8c00',
+                        formatter: function (value, context) {
+                            return `UE (${value.x.toFixed(1)}, ${value.y.toFixed(1)})`;
+                        },
+                        offset: 6,
+                        padding: {
+                            bottom: 6
+                        }
+                    }
+                },
+                {
+                    label: 'Cells',
+                    data: [],
+                    backgroundColor: [],
+                    borderWidth: 1,
+                    pointRadius: 20,
+                    pointStyle: 'triangle',
+                    datalabels: {
+                        align: 'top',
+                        color: '#ff4500',
+                        formatter: function (value, context) {
+                            return `Cell (${value.x.toFixed(1)}, ${value.y.toFixed(1)})`;
+                        },
+                        offset: 12,
+                        padding: {
+                            bottom: 12
+                        }
+                    }
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    ticks: {
+                        color: '#ff8c00',
+                        callback: function (value) {
+                            return value;
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    ticks: {
+                        color: '#ff8c00'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'RIC TaaP Studio',
+                    color: '#ff8c00',
+                    font: {
+                        size: 18
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function (tooltipItems) {
+                            return '';
+                        },
+                        label: function (context) {
+                            const dataset = context.dataset;
+                            const index = context.dataIndex;
+                            const dataPoint = dataset.data[index];
+
+                            let label = dataset.label || '';
+                            if (dataPoint) {
+                                if (dataset.label === 'UEs') {
+                                    label += `\nID: ${dataPoint.ue_id}`;
+                                } else if (dataset.label === 'Cells') {
+                                    label += `\nID: ${dataPoint.cell_id}`;
+                                }
+                                label += `\nX: ${dataPoint.x.toFixed(1)}`;
+                                label += `\nY: ${dataPoint.y.toFixed(1)}`;
+                                if (dataset.label === 'UEs') {
+                                    label += `\nType: ${dataPoint.type}`;
+                                    label += `\nConnected to Cell: ${dataPoint.MMWave_Cell || 'N/A'}`;
+                                } else if (dataset.label === 'Cells') {
+                                    label += `\nType: ${dataPoint.type}`;
+                                }
+                            }
+                            return label;
+                        }
+                    }
+                },
+                datalabels: {
+                    display: true
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    const ctx2 = document.getElementById('es_diff').getContext('2d');
+
+
+    const actualEsChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: []
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function (value, index, values) {
+                            return this.getLabelForValue(value).split('\n');
+                        },
+                        maxRotation: 0,
+                        minRotation: 0,
+                        padding: 10,
+                        color: '#FFFFFF',
+                        font: {
+                            size: 10
+                        },
+                    },
+                },
+                y: {
+                    beginAtZero: true
+                },
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Network power consumption in J',
+                    color: '#FFFFFF',
+                    font: {
+                        size: 16
+                    },
+                    padding: {
+                        top: 10,
+                        bottom: 10
+                    },
+                    align: 'center'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (tooltipItem) {
+                            return tooltipItem.raw;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+
+    const ctx3 = document.getElementById('es-mode-chart').getContext('2d');
+    const ctx4 = document.getElementById('sinr-chart').getContext('2d');
+    const ctx5 = document.getElementById('retx-chart').getContext('2d');
+    const ctx6 = document.getElementById('prb-usage-chart').getContext('2d');
+
+    const es_mode_chart = new Chart(ctx3, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 51}, (_, i) => -50 + i),
+
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Timeline',
+                        color: '#ff8c00',
+                        font: {
+                            size: 14
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    ticks: {
+                        color: '#ff8c00'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'ES MODE',
+                        color: '#ff8c00',
+                        font: {
+                            size: 14
+                        }
+                    },
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    min: 0,
+                    max: 1,
+                    ticks: {
+                        stepSize: 1,
+                        color: '#ff8c00'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#ff8c00'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return `Cell ${context.dataset.cell_id}: ${context.raw}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const sinr_chart = new Chart(ctx4, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 51}, (_, i) => -50 + i),
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Timeline',
+                        color: '#ff8c00',
+                        font: {
+                            size: 14
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    ticks: {
+                        color: '#ff8c00'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Serving SINR',
+                        color: '#ff8c00',
+                        font: {
+                            size: 14
+                        }
+                    },
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    ticks: {
+                        color: '#ff8c00'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#ff8c00'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return `UE ${context.dataset.ueid}: ${context.raw}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const retx_chart = new Chart(ctx5, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 51}, (_, i) => -50 + i),
+
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Timeline',
+                        color: '#ff8c00',
+                        font: {
+                            size: 14
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    ticks: {
+                        color: '#ff8c00'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'RETX',
+                        color: '#ff8c00',
+                        font: {
+                            size: 14
+                        }
+                    },
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    ticks: {
+                        color: '#ff8c00'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#ff8c00'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return `UE ${context.dataset.ueid}: ${context.raw}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    const prb_usage_chart = new Chart(ctx6, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 51}, (_, i) => -50 + i),
+
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Timeline',
+                        color: '#ff8c00',
+                        font: {
+                            size: 14
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    ticks: {
+                        color: '#ff8c00'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'PRB usage',
+                        color: '#ff8c00',
+                        font: {
+                            size: 14
+                        }
+                    },
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    ticks: {
+                        color: '#ff8c00'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#ff8c00'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return `Cell ${context.dataset.cell_id}: ${context.raw}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    function setFlags() {
+        const select = document.getElementById("scenario");
+        const flags = document.getElementById("flags");
+
+        if (select.value === defaultScenario || select.value === defaultScenario_nr) {
+            flags.checked = true;
+            flags.disabled = false;
+        } else {
+            flags.checked = false;
+            flags.disabled = true;
+        }
+    }
+
+    !function buildScenarioOptions() {
+        const select = document.getElementById("scenario");
+        const flags = document.getElementById("flags");
+
+        let options = [];
+        fetch('/scenarios')
+                   .then(response => response.json())
+                   .then(options => {
+                        for(let i in options ) {
+                            let opt = options[i];
+                            let el = document.createElement("option");
+                            el.textContent = opt;
+                            el.value = opt;
+                            if (opt == defaultScenario) {
+                                el.selected = true;
+                                el.defaultSelected = true;
+                                flags.checked = true;
+                            }
+                            select.appendChild(el);
+                        }
+                   });
+    }();
+
+    function updateChart() {
+        fetch('/refresh-data')
+                .then(response => response.json())
+                .then(data => {
+
+                    const cellColors = [
+                        '#1f77b4', '#9467bd', '#2ca02c', '#d62728', '#ff7f0e',
+                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+                        '#9e4f96', '#e57373', '#66c2a5', '#ffcc00', '#b3b3b3',
+                        '#ff1f7a', '#6b5b95', '#4daf4a', '#f4b400', '#4e73df'
+                    ];
+
+                    const ueColors = [
+                        '#f39c12', '#8e44ad', '#e74c3c', '#2ecc71', '#3498db',
+                        '#9b59b6', '#34495e', '#f1c40f', '#1abc9c', '#d35400',
+                        '#8e44ad', '#27ae60', '#2980b9', '#16a085', '#e67e22',
+                        '#f7b7a3', '#c0392b', '#9b59b6', '#e91e63', '#f44336'
+                    ];
+
+                    const cellColorMap = new Map(data.cells.map((cell, index) => [
+                        cell.cell_id, cellColors[index % cellColors.length]
+                    ]));
+
+                    const ueColorMap = new Map(data.ues.map((ue, index) => [
+                        ue.ue_id, cellColors[index % ueColors.length]
+                    ]));
+
+                    const simIdLabel = document.getElementById('simid_label');
+                    const joinLabel = document.getElementById('label_between_status_and_simid')
+                    const statusLabel = document.getElementById('status_label');
+                    if (data.sim_id != 'off') {
+                        joinLabel.textContent = ', simulation id = '
+                        simIdLabel.textContent = data.sim_id;
+                    } else {
+                        if (statusLabel.textContent == 'Simulation running')
+                            joinLabel.textContent = ', waiting for the first measurement ...'
+                        else
+                            joinLabel.textContent = ''
+                        simIdLabel.textContent = '';
+                    }
+
+                    const cellData = data.cells.map(cell => ({
+                        x: cell.x_position,
+                        y: cell.y_position,
+                        cell_id: cell.cell_id,
+                        type: cell.type,
+                        backgroundColor: cellColorMap.get(cell.cell_id),
+                        pointStyle: cell.type === 'lte' ? 'rect' : 'triangle'
+                    }));
+
+                    const ueData = data.ues.map(ue => ({
+                        x: ue.x_position,
+                        y: ue.y_position,
+                        ue_id: ue.ue_id,
+                        type: ue.type,
+                        MMWave_Cell: ue.MMWave_Cell,
+                        LTE_Cell: ue.LTE_Cell,
+                        backgroundColor: cellColorMap.get(ue.MMWave_Cell)
+                    }));
+
+                    myChart.data.datasets[0].data = ueData;
+                    myChart.data.datasets[0].backgroundColor = ueData.map(ue => ue.backgroundColor);
+                    myChart.data.datasets[1].data = cellData;
+                    myChart.data.datasets[1].backgroundColor = cellData.map(cell => cell.backgroundColor);
+                    myChart.data.datasets[1].pointStyle = cellData.map(cell => cell.pointStyle);
+                    var chartDimensions = data.max_x_max_y;
+                    myChart.options.scales.x.min = 0;
+                    myChart.options.scales.x.max = chartDimensions[0];
+                    myChart.options.scales.y.min = 0;
+                    myChart.options.scales.y.max = chartDimensions[1];
+
+                    myChart.update();
+
+                    updateExperimentHeader(data);
+
+                    if (data.simulation_status === 'off') {
+                        return;
+                    }
+                    const esState = data.es_state;
+                    Object.keys(esState).forEach(cellId => {
+                        const intCellId = parseInt(cellId, 10);
+                        let dataset = es_mode_chart.data.datasets.find(d => d.label === `Cell ${cellId}`);
+                        if (!dataset) {
+                            dataset = {
+                                label: `Cell ${cellId}`,
+                                cell_id: intCellId,
+                                data: Array(es_mode_chart.data.labels.length).fill(0),
+                                backgroundColor: cellColorMap.get(intCellId),
+                                borderColor: cellColorMap.get(intCellId),
+                                borderWidth: 2,
+                                fill: false
+                            };
+                            es_mode_chart.data.datasets.push(dataset);
+                        }
+
+                        const currentValue = esState[cellId] !== null && esState[cellId] !== undefined ? esState[cellId] : 0;
+                        dataset.data.push(currentValue);
+                        if (dataset.data.length > es_mode_chart.data.labels.length) {
+                            dataset.data.shift();
+                        }
+                    });
+                    es_mode_chart.update();
+
+                    const sinr = data.sinr;
+                    Object.keys(sinr).forEach(ueId => {
+                        const intUeId = parseInt(ueId, 10);
+                        let dataset = sinr_chart.data.datasets.find(d => d.label === `Ue ${ueId}`);
+                        const ue = data.ues.find(ue => parseInt(ue.ue_id, 10) === intUeId);
+                        const serv_cell_id = parseInt(ue.L3servingSINR_CellID, 10);
+                        const cellColor = cellColorMap.get(serv_cell_id) || 'black';
+                        if (!dataset) {
+                            dataset = {
+                                label: `Ue ${ueId}`,
+                                ueid: intUeId,
+                                data: Array(sinr_chart.data.labels.length).fill(0),
+                                backgroundColor: 'black',
+                                borderColor: Array(sinr_chart.data.labels.length - 1).fill('white'),
+                                borderWidth: 0.5,
+                                fill: false,
+                                pointBackgroundColor: Array(sinr_chart.data.labels.length).fill('black'),
+                                pointBorderColor: Array(sinr_chart.data.labels.length).fill('black'),
+                                pointHoverRadius: 9,
+                            };
+                            sinr_chart.data.datasets.push(dataset);
+                        }
+
+                        const currentValue = sinr[ueId] !== null && sinr[ueId] !== undefined ? sinr[ueId] : 0;
+                        dataset.data.push(currentValue);
+                        dataset.data.shift();
+                        dataset.pointBackgroundColor.push(cellColor);
+                        dataset.pointBackgroundColor.shift();
+                        dataset.pointBorderColor.push(cellColor);
+                        dataset.pointBorderColor.shift();
+                        dataset.backgroundColor = cellColor;
+
+
+                    });
+
+                    sinr_chart.update();
+
+                    const retx = data.retx;
+                    Object.keys(retx).forEach(ueId => {
+                        const intUeId = parseInt(ueId, 10);
+                        let dataset = retx_chart.data.datasets.find(d => d.label === `Ue ${ueId}`);
+                        const ue = data.ues.find(ue => parseInt(ue.ue_id, 10) === intUeId);
+                        const serv_cell_id = parseInt(ue.L3servingSINR_CellID, 10);
+                        const cellColor = cellColorMap.get(serv_cell_id) || 'black';
+                        if (!dataset) {
+                            dataset = {
+                                label: `Ue ${ueId}`,
+                                ueid: intUeId,
+                                data: Array(retx_chart.data.labels.length).fill(0),
+                                backgroundColor: 'black',
+                                borderColor: Array(retx_chart.data.labels.length - 1).fill('white'),
+                                borderWidth: 0.5,
+                                fill: false,
+                                pointBackgroundColor: Array(retx_chart.data.labels.length).fill('black'),
+                                pointBorderColor: Array(retx_chart.data.labels.length).fill('black'),
+                                pointHoverRadius: 9,
+                            };
+                            retx_chart.data.datasets.push(dataset);
+                        }
+
+                        const currentValue = retx[ueId] !== null && retx[ueId] !== undefined ? retx[ueId] : 0;
+                        dataset.data.push(currentValue);
+                        dataset.data.shift();
+                        dataset.pointBackgroundColor.push(cellColor);
+                        dataset.pointBackgroundColor.shift();
+                        dataset.pointBorderColor.push(cellColor);
+                        dataset.pointBorderColor.shift();
+                        dataset.backgroundColor = cellColor;
+                    });
+                    retx_chart.update();
+
+                    const prb_usage = data.prb;
+                    Object.keys(prb_usage).forEach(cellId => {
+                        let dataset = prb_usage_chart.data.datasets.find(d => d.label === `Cell ${cellId}`);
+                        const intCellId = parseInt(cellId, 10);
+                        if (!dataset) {
+                            dataset = {
+                                label: `Cell ${cellId}`,
+                                cell_id: intCellId,
+                                data: Array(prb_usage_chart.data.labels.length).fill(0),
+                                backgroundColor: cellColorMap.get(intCellId),
+                                borderColor: cellColorMap.get(intCellId),
+                                borderWidth: 2,
+                                fill: false
+                            };
+                            prb_usage_chart.data.datasets.push(dataset);
+                        }
+                        const currentValue = prb_usage[cellId] !== null && prb_usage[cellId] !== undefined ? prb_usage[cellId] : 0;
+                        dataset.data.push(currentValue);
+                        if (dataset.data.length > prb_usage_chart.data.labels.length) {
+                            dataset.data.shift();
+                        }
+                    });
+                    prb_usage_chart.update();
+
+/*                    if (actualEsChart) {
+                        const startingPower = data.starting_power || 0;
+                        const currentPower = data.current_power || 0;
+
+                        if (actualEsChart.data.datasets.length === 0) {
+                            actualEsChart.data.datasets.push({
+                                label: 'Difference in power consumption between modes',
+                                data: [startingPower, currentPower],
+                                backgroundColor: ['darkgray', 'green'],
+                            });
+                            actualEsChart.data.labels = [
+                                'Network power usage\nwith ES disabled',
+                                'Current network\npower usage'
+                            ];
+                        } else {
+                            actualEsChart.data.datasets[0].data = [startingPower, currentPower];
+                            actualEsChart.data.labels = [
+                                'Network power usage\nwith ES disabled',
+                                'Current network\npower usage'
+                            ];
+                        }
+
+                        actualEsChart.update();
+                    } else {
+                        console.error("Chart instance is not initialized.");
+                    }
+*/
+                    if (actualEsChart) {
+                        const maxec = data.maxec || 0;
+                        const totalcurrec = data.totalcurrec || 0;
+
+                        if (actualEsChart.data.datasets.length === 0) {
+                            actualEsChart.data.datasets.push({
+                                label: 'Network power\n consumption in J',
+                                data: [maxec, totalcurrec],
+                                backgroundColor: ['darkgray', 'green'],
+                            });
+                            actualEsChart.data.labels = [
+                                'MAX network power \nconsumption in J',
+                                'Current network power \nconsumption in J'
+                            ];
+                        } else {
+                            actualEsChart.data.datasets[0].data = [maxec, totalcurrec];
+                            actualEsChart.data.labels = [
+                                'MAX network power \nconsumption in J',
+                                'Current network power \nconsumption in J'
+                            ];
+                        }
+
+                        actualEsChart.update();
+                    } else {
+                        console.error("Chart instance is not initialized.");
+                    }
+
+
+                    document.getElementById('ueSourceData').innerHTML = formatAndDisplayCellData(data.ues);
+                    document.getElementById('cellSourceData').innerHTML = formatAndDisplayCellData(data.cells);
+
+                    const legendContainer = document.getElementById('chart-legend');
+                    legendContainer.innerHTML = '';
+
+                    cellData.forEach(cell => {
+                        const legendItem = document.createElement('div');
+                        legendItem.className = 'legend-item';
+
+                        const colorBox = document.createElement('div');
+                        colorBox.className = 'legend-color-box';
+                        colorBox.style.backgroundColor = cell.backgroundColor;
+
+                        const legendText = document.createElement('span');
+                        legendText.className = 'legend-text';
+                        legendText.textContent = `
+                        Cell ${cell.cell_id} (${cell.type})`;
+
+                        legendItem.appendChild(colorBox);
+                        legendItem.appendChild(legendText);
+                        legendContainer.appendChild(legendItem);
+                    });
+
+                    const isChartViewActive = document.getElementById('chart-content').classList.contains('active');
+                    if (isChartViewActive) {
+                        legendContainer.classList.add('horizontal');
+                        legendContainer.classList.remove('vertical');
+                    } else {
+                        legendContainer.classList.add('vertical');
+                        legendContainer.classList.remove('horizontal');
+                    }
+                });
+    }
+
+
+    document.getElementById('form-toggle-button').addEventListener('click', () => {
+        const formContainer = document.getElementById('form-container');
+        const button = document.getElementById('form-toggle-button');
+        if (formContainer.style.display === 'none' || formContainer.style.display === '') {
+            formContainer.style.display = 'block';
+            button.textContent = 'Hide simulation setup';
+        } else {
+            formContainer.style.display = 'none';
+            button.textContent = 'Show simulation setup';
+        }
+    });
+
+    document.getElementById('toggleButton').addEventListener('click', () => {
+        const frameContainer = document.getElementById('frameContainer');
+        const button = document.getElementById('toggleButton');
+        if (frameContainer.style.display === 'none' || frameContainer.style.display === '') {
+            frameContainer.style.display = 'block';
+            button.textContent = 'Hide A1 policy manager';
+        } else {
+            frameContainer.style.display = 'none';
+            button.textContent = 'Show A1 policy manager';
+        }
+    });
+
+    const toggleButton = document.getElementById('toggleButton');
+    toggleButton.addEventListener('click', () => {
+        frameContainer.classList.toggle('hidden');
+    });
+
+    const frameContainer = document.getElementById('frameContainer');
+
+    const fetchData = (endpoint, responseId) => {
+        fetch(endpoint)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const responseElement = document.getElementById(responseId);
+
+                    const preElement = document.createElement('pre');
+                    preElement.style.color = "white";
+                    preElement.textContent = JSON.stringify(data, null, 2);
+
+                    responseElement.innerHTML = '';
+                    responseElement.appendChild(preElement);
+                })
+                .catch(error => {
+                    const responseElement = document.getElementById(responseId);
+                    responseElement.innerText = `Error: ${error.message}`;
+                });
+    };
+
+
+
+    document.getElementById('fetchData1').addEventListener('click', () => {
+        const url = `http://${host_ns3}:9000/a1-p/policytypes`;
+        fetchData(url, 'response1');
+
+    });
+
+    document.getElementById('fetchData2').addEventListener('click', () => {
+        const param1 = document.getElementById('param1').value;
+        if (param1 == '' || isNaN(param1)) {
+            document.getElementById('response2').innerText = "'policy_type_id:' must be fulfilled.";
+        } else {
+            const url = `http://${host_ns3}:9000/a1-p/policytypes/${param1}`;
+            fetchData(url, 'response2');
+        }
+    });
+
+    document.getElementById('fetchData3').addEventListener('click', () => {
+        const param1 = document.getElementById('param1').value;
+        if (param1 === '' || isNaN(param1)) {
+            document.getElementById('response3').innerText = "'policy_type_id:' must be fulfilled.";
+        } else {
+            const url = `http://${host_ns3}:9000/a1-p/policytypes/${param1}/policies`;
+            fetchData(url, 'response3');
+        }
+    });
+
+    document.getElementById('fetchData4').addEventListener('click', () => {
+        const param1 = document.getElementById('param1').value;
+        const param2 = document.getElementById('param2').value;
+        if (param1 === '' || isNaN(param1)) {
+            document.getElementById('response4').innerText = "'policy_type_id:' and 'policy_instance_id:' must be fulfilled";
+        } else if (param2 === '' || !(typeof param2 === 'string' || param2 instanceof String)) {
+            document.getElementById('response4').innerText = "'policy_type_id:' and 'policy_instance_id:' must be fulfilled";
+        } else {
+            const url = `http://${host_ns3}:9000/a1-p/policytypes/${param1}/policies/${param2}/status`;
+            fetchData(url, 'response4');
+        }
+    });
+
+    const sendPutRequest = (params, jsonId, responseId, endpoint) => {
+        const jsonPayload = document.getElementById(jsonId).value;
+        const param1 = document.getElementById('param1').value;
+
+        if (param1 === '' || isNaN(param1)) {
+            document.getElementById(responseId).innerText = "'policy_type_id:' must be fulfilled.";
+            return;
+        }
+
+        if (jsonPayload === '') {
+            document.getElementById(responseId).innerText = "A valid JSON should be provided";
+            return;
+        }
+
+        const queryString = params
+            .map(({id, name}) => `${encodeURIComponent(document.getElementById(id).value)}`)
+            .join('&');
+
+        try {
+            const payload = JSON.parse(jsonPayload);
+
+            fetch(`${endpoint}${queryString}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(
+                                `HTTP error! Status: ${response.status}, Message: ${errorData.detail || errorData.message || 'Unknown error'}`
+                            );
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById(responseId).innerText = "Added successfully!";
+                })
+                .catch(error => {
+                    document.getElementById(responseId).innerText = `Error: ${error.message}`;
+                });
+        } catch (err) {
+            document.getElementById(responseId).innerText = `Invalid JSON: ${err.message}`;
+        }
+    };
+
+    document.getElementById('sendPut1').addEventListener('click', () => {
+        const url = `http://${host_ns3}:9000/a1-p/policytypes/`;
+        sendPutRequest(
+            [{id: 'param1', name: 'parameter'}],
+            'putJson1',
+            'putResponse1',
+            url
+        );
+    });
+
+    const sendPutRequest2 = (param1, param2, jsonPayload, responseId) => {
+        const url = `http://${host_ns3}:9000/a1-p/policytypes/${param1}/policies/${param2}`;
+        try {
+            const bodyPayload = JSON.stringify(jsonPayload);
+            fetch(url, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: bodyPayload
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(
+                                `HTTP error! Status: ${response.status}, Message: ${errorData.detail || errorData.message || 'Unknown error'}`
+                            );
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById(responseId).innerText = "Added successfully!";
+                })
+                .catch(error => {
+                    document.getElementById(responseId).innerText = `Error: ${error.message}`;
+                });
+        } catch (err) {
+            document.getElementById(responseId).innerText = `Invalid JSON payload: ${err.message}`;
+        }
+    };
+
+
+    document.getElementById('sendPut2').addEventListener('click', () => {
+        const param1 = document.getElementById('param1').value;
+        const param2 = document.getElementById('param2').value;
+        const jsonText = document.getElementById('putJson2').value;
+        if (param1 === '' || isNaN(param1)) {
+            document.getElementById('putResponse2').innerText = "'policy_type_id:' and 'policy_instance_id:' must be fulfilled.";
+            return;
+        } else if (param2 === '' || !(typeof param2 === 'string' || param2 instanceof String)) {
+            document.getElementById('putResponse2').innerText = "'policy_type_id:' and 'policy_instance_id:' must be fulfilled.";
+            return;
+        } else if (jsonText === '') {
+            document.getElementById('putResponse2').innerText = "A valid JSON should be provided";
+            return;
+        }
+        let jsonPayload;
+        try {
+            jsonPayload = JSON.parse(jsonText || '{}');
+        } catch (error) {
+            document.getElementById('putResponse2').innerText =
+                `Error: ${error.message}`;
+            return;
+        }
+        sendPutRequest2(param1, param2, jsonPayload, 'putResponse2');
+    });
+
+    document.getElementById('chart-tab').addEventListener('click', () => {
+        document.getElementById('chart-content').classList.add('active');
+        document.getElementById('data-content').classList.remove('active');
+        document.getElementById('es-content').classList.remove('active');
+        document.getElementById('slicing-content').classList.remove('active');
+
+        document.getElementById('chart-content').style.display = 'flex';
+
+        document.getElementById('chart-tab').classList.add('active');
+        document.getElementById('data-tab').classList.remove('active');
+        document.getElementById('es-tab').classList.remove('active');
+        document.getElementById('slicing-tab').classList.remove('active');
+
+        updateChart();
+    });
+
+    document.getElementById('data-tab').addEventListener('click', () => {
+        document.getElementById('chart-content').classList.remove('active');
+        document.getElementById('data-content').classList.add('active');
+        document.getElementById('es-content').classList.remove('active');
+        document.getElementById('slicing-content').classList.remove('active');
+
+        document.getElementById('chart-content').style.display = 'flex';
+
+        document.getElementById('chart-tab').classList.remove('active');
+        document.getElementById('data-tab').classList.add('active');
+        document.getElementById('es-tab').classList.remove('active');
+        document.getElementById('slicing-tab').classList.remove('active');
+
+        updateChart();
+    });
+
+    document.getElementById('es-tab').addEventListener('click', () => {
+        document.getElementById('chart-content').classList.remove('active');
+        document.getElementById('data-content').classList.remove('active');
+        document.getElementById('es-content').classList.add('active');
+        document.getElementById('slicing-content').classList.remove('active');
+
+        document.getElementById('chart-content').style.display = 'none';
+
+        document.getElementById('chart-tab').classList.remove('active');
+        document.getElementById('data-tab').classList.remove('active');
+        document.getElementById('es-tab').classList.add('active');
+        document.getElementById('slicing-tab').classList.remove('active');
+
+        updateChart();
+    });
+
+    const sliceInputs = [
+        document.getElementById('slice1-target'),
+        document.getElementById('slice2-target'),
+        document.getElementById('slice3-target')
+    ];
+
+    function updateSliceTotal() {
+        const values = sliceInputs.map(input =>
+            Number.parseInt(input.value || '0', 10)
+        );
+
+        const total = values.reduce((sum, value) => sum + value, 0);
+        const totalElement = document.getElementById('slice-total');
+
+        totalElement.textContent = `${total}%`;
+        totalElement.style.color = total === 100 ? '#16A34A' : '#DC2626';
+    }
+
+    sliceInputs.forEach(input => {
+        input.addEventListener('input', updateSliceTotal);
+    });
+
+    updateSliceTotal();
+
+    document.getElementById('apply-slice-policy')
+        .addEventListener('click', async () => {
+
+        const button = document.getElementById('apply-slice-policy');
+        const message = document.getElementById('slice-control-message');
+        const status = document.getElementById('slice-status');
+
+        const slice1 = Number.parseInt(
+            document.getElementById('slice1-target').value,
+            10
+        );
+        const slice2 = Number.parseInt(
+            document.getElementById('slice2-target').value,
+            10
+        );
+        const slice3 = Number.parseInt(
+            document.getElementById('slice3-target').value,
+            10
+        );
+
+        if (
+            !Number.isInteger(slice1) ||
+            !Number.isInteger(slice2) ||
+            !Number.isInteger(slice3)
+        ) {
+            message.textContent = 'All slice ratios must be integers.';
+            message.style.color = '#DC2626';
+            return;
+        }
+
+        if (slice1 + slice2 + slice3 !== 100) {
+            message.textContent = 'Target ratios must sum to 100%.';
+            message.style.color = '#DC2626';
+            return;
+        }
+
+        button.disabled = true;
+        message.textContent = 'Applying policy...';
+        message.style.color = '#F59E0B';
+        status.textContent = 'Applying';
+
+        try {
+            const response = await fetch('/slice-control', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    slice1: slice1,
+                    slice2: slice2,
+                    slice3: slice3
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || data.status !== 'Applied') {
+                throw new Error(
+                    data.message || 'Slice policy application failed'
+                );
+            }
+
+            document.getElementById('slice-e2-nodes').textContent =
+                data.e2_nodes;
+
+            document.getElementById('slice-acks').textContent =
+                `${data.ack_count}/${data.expected_acks}`;
+
+            document.getElementById('slice-last-policy').textContent =
+                `${data.policy.slice1}/${data.policy.slice2}/${data.policy.slice3}`;
+
+            status.textContent = 'Applied';
+            status.style.color = '#16A34A';
+
+            message.textContent = data.message;
+            message.style.color = '#16A34A';
+
+        } catch (error) {
+            status.textContent = 'Failed';
+            status.style.color = '#DC2626';
+
+            message.textContent = error.message;
+            message.style.color = '#DC2626';
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+
+    async function refreshSliceAllocation() {
+        try {
+            const response = await fetch('/slice-allocation');
+
+            if (!response.ok) {
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!data.slices) {
+                return;
+            }
+
+            for (const sliceId of ['1', '2', '3']) {
+                const slice = data.slices[sliceId] || {};
+                const element = document.getElementById(
+                    `slice${sliceId}-budget-rb`
+                );
+
+                if (!element) {
+                    continue;
+                }
+
+                element.textContent =
+                    slice.budget_rb === null ||
+                    slice.budget_rb === undefined
+                        ? '--'
+                        : `${slice.budget_rb} RB`;
+            }
+
+            const totalElement =
+                document.getElementById('slice-total-rb');
+
+            if (totalElement) {
+                totalElement.textContent =
+                    data.total_rb === null ||
+                    data.total_rb === undefined
+                        ? '--'
+                        : `${data.total_rb} RB`;
+            }
+
+            const symbols = ['1', '2', '3'].map(sliceId => {
+                const slice = data.slices[sliceId] || {};
+
+                return (
+                    slice.allocated_symbols === null ||
+                    slice.allocated_symbols === undefined
+                )
+                    ? '--'
+                    : slice.allocated_symbols;
+            });
+
+            const symbolElement =
+                document.getElementById('slice-symbol-allocation');
+
+            if (symbolElement) {
+                symbolElement.textContent =
+                    `${symbols[0]} / ${symbols[1]} / ${symbols[2]}`;
+            }
+
+        } catch (error) {
+            console.debug(
+                'Slice allocation telemetry unavailable:',
+                error
+            );
+        }
+    }
+
+    refreshSliceAllocation();
+    setInterval(refreshSliceAllocation, 1500);
+
+
+    document.getElementById('slicing-tab').addEventListener('click', () => {
+        document.getElementById('chart-content').classList.remove('active');
+        document.getElementById('data-content').classList.remove('active');
+        document.getElementById('es-content').classList.remove('active');
+        document.getElementById('slicing-content').classList.add('active');
+
+        document.getElementById('chart-content').style.display = 'none';
+
+        document.getElementById('chart-tab').classList.remove('active');
+        document.getElementById('data-tab').classList.remove('active');
+        document.getElementById('es-tab').classList.remove('active');
+        document.getElementById('slicing-tab').classList.add('active');
+    });
+
+    document.getElementById('simulationForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+    });
+
+
+    function setStatusCard(dotId, statusId, active, activeText, idleText) {
+        const dot = document.getElementById(dotId);
+        const status = document.getElementById(statusId);
+
+        if (!dot || !status) return;
+
+        if (active) {
+            dot.classList.add('ok');
+            dot.classList.remove('warn');
+            status.textContent = activeText;
+            status.style.color = '#16A34A';
+        } else {
+            dot.classList.remove('ok');
+            dot.classList.remove('warn');
+            status.textContent = idleText;
+            status.style.color = '#334155';
+        }
+    }
+
+    let esLastEnergyTotal = null;
+    let esStableTicks = 0;
+
+    function updateExperimentHeader(data) {
+        const ues = Array.isArray(data.ues) ? data.ues : [];
+        const cells = Array.isArray(data.cells) ? data.cells : [];
+
+        const simId =
+            data.sim_id !== undefined &&
+            data.sim_id !== null
+                ? String(data.sim_id)
+                : 'off';
+
+        /*
+         * Open5GS indicator:
+         * our GUI bridge only publishes the open5gs-es-demo simulation ID
+         * after the Open5GS GUI workflow has started.
+         */
+        const open5gsRunning =
+            simId !== 'off' &&
+            simId.toLowerCase().includes('open5gs');
+
+        setStatusCard(
+            'core-dot',
+            'core-status',
+            open5gsRunning,
+            'Running',
+            'Waiting'
+        );
+
+        const coreDetail = document.getElementById('core-detail');
+
+        if (coreDetail) {
+            coreDetail.textContent = open5gsRunning
+                ? `${ues.length} UEs visible`
+                : 'Waiting for core telemetry';
+        }
+
+        /*
+         * N2 indication:
+         * turn green once the integrated run is active and UE/RAN
+         * association telemetry is visible.
+         */
+        const associatedUes = ues.filter(ue => {
+            const cell = Number(ue.L3servingSINR_CellID || 0);
+            return cell > 0;
+        }).length;
+
+        const n2Connected =
+            open5gsRunning &&
+            ues.length > 0 &&
+            associatedUes > 0;
+
+        setStatusCard(
+            'n2-dot',
+            'n2-status',
+            n2Connected,
+            'Connected',
+            'Waiting'
+        );
+
+        /*
+         * N3 indication:
+         * use actual user-plane/KPM activity rather than a static badge.
+         */
+        const n3FromUe = ues.some(ue =>
+            Number(ue.PDCP_Throughput_kbps || 0) > 0 ||
+            Number(ue.Tx_Bytes || 0) > 0 ||
+            Number(ue.PDCP_PDU || 0) > 0 ||
+            Number(ue.Qos_PDCP_PDU || 0) > 0
+        );
+
+        const n3FromCell = cells.some(cell =>
+            Number(cell.LTE_Cell_PDCP_Volume || 0) > 0 ||
+            Number(cell.QosFlow_PdcpPduVolumeDl || 0) > 0 ||
+            Number(cell.TotNbrDl || 0) > 0 ||
+            Number(cell.MeanActiveUEsDownlink || 0) > 0
+        );
+
+        const n3Active =
+            open5gsRunning && (n3FromUe || n3FromCell);
+
+        setStatusCard(
+            'n3-dot',
+            'n3-status',
+            n3Active,
+            'Active',
+            'Waiting'
+        );
+
+        /*
+         * Energy-saving status:
+         *
+         * Do NOT compare the cumulative energy of an unfinished baseline
+         * run against the complete 10 s baseline. That produces a fake
+         * 90% -> 0% saving curve.
+         *
+         * Before any cell is switched OFF:
+         *     show Baseline Monitoring only.
+         *
+         * After an ES action is detected:
+         *     show ES ACTIVE while energy is still changing.
+         *
+         * Once cumulative energy is stable for several refresh cycles:
+         *     show the final saving percentage.
+         */
+        const maxEnergy = Number(data.maxec || 0);
+        const currentEnergy = Number(data.totalcurrec || 0);
+
+        const savingValue =
+            document.getElementById('energy-saving-value');
+
+        const energyDetail =
+            document.getElementById('energy-detail');
+
+        const offBadge =
+            document.getElementById('cell-off-badge');
+
+        const esState = data.es_state || {};
+
+        const offCells = Object.entries(esState)
+            .filter(([_, value]) => Number(value) === 1)
+            .map(([cellId]) => cellId);
+
+        const esActionActive = offCells.length > 0;
+
+        if (!esActionActive) {
+            esStableTicks = 0;
+            esLastEnergyTotal =
+                currentEnergy > 0 ? currentEnergy : null;
+
+            if (savingValue) {
+                savingValue.textContent = '--';
+            }
+
+            if (offBadge) {
+                offBadge.textContent = 'Baseline';
+                offBadge.style.background = '#EFF6FF';
+                offBadge.style.color = '#0B5ED7';
+            }
+
+            if (energyDetail) {
+                energyDetail.textContent =
+                    currentEnergy > 0
+                        ? `Baseline monitoring · ${(currentEnergy / 1000).toFixed(2)} kJ`
+                        : 'Waiting for energy telemetry';
+            }
+
+        } else {
+            if (
+                currentEnergy > 0 &&
+                esLastEnergyTotal !== null &&
+                Math.abs(currentEnergy - esLastEnergyTotal) < 1.0
+            ) {
+                esStableTicks += 1;
+            } else {
+                esStableTicks = 0;
+            }
+
+            if (currentEnergy > 0) {
+                esLastEnergyTotal = currentEnergy;
+            }
+
+            if (offBadge) {
+                offBadge.textContent =
+                    `Cell ${offCells.join(', ')} OFF`;
+
+                offBadge.style.background = '#FFF7ED';
+                offBadge.style.color = '#EA580C';
+            }
+
+            if (
+                esStableTicks >= 2 &&
+                maxEnergy > 0 &&
+                currentEnergy > 0
+            ) {
+                const saving =
+                    ((maxEnergy - currentEnergy) / maxEnergy) * 100;
+
+                if (savingValue) {
+                    if (saving >= 0) {
+                        savingValue.textContent =
+                            `${saving.toFixed(1)}% ↓`;
+                    } else {
+                        savingValue.textContent =
+                            `${Math.abs(saving).toFixed(1)}% ↑`;
+                    }
+                }
+
+                if (energyDetail) {
+                    energyDetail.textContent =
+                        `Final · ${(maxEnergy / 1000).toFixed(2)} → ` +
+                        `${(currentEnergy / 1000).toFixed(2)} kJ`;
+                }
+
+            } else {
+                if (savingValue) {
+                    savingValue.textContent = 'ES ACTIVE';
+                }
+
+                if (energyDetail) {
+                    energyDetail.textContent =
+                        currentEnergy > 0
+                            ? `Measuring · ${(currentEnergy / 1000).toFixed(2)} kJ`
+                            : 'Energy-saving action active';
+                }
+            }
+        }
+    }
+
+    setInterval(updateChart, 2000);
+    updateChart();
+
+    function sendForm(endpoint) {
+        resetSim()
+        const form = document.getElementById('simulationForm');
+        const formData = new FormData(form);
+        const data = {};
+
+        formData.forEach((value, key) => {
+            if (value.trim() !== '') {
+                data[key] = value;
+            }
+        });
+
+        console.log('Data to be sent:', data);
+        const statusLabel = document.getElementById('status_label');
+        const startButton = document.getElementById('start_button')
+        const stopButton = document.getElementById('stop_button')
+        const warninglabel = document.getElementById('warning_label')
+        statusLabel.textContent = 'Simulation starting';
+        startButton.disabled = true
+        stopButton.disabled = false
+        const select = document.getElementById("scenario");
+        const flags = document.getElementById("flags");
+        scenario.disabled = true
+        flags.disabled = true
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    statusLabel.textContent = 'Simulation running';
+                    warninglabel.textContent = 'Warning: if there are no Cells/UEs on the grid after max 30s, please check if ns3 is running properly typing in terminal "ps -a" or "cat ns-3-mmwave-oran/ns3_run.log"';
+
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    statusLabel.textContent = 'Error while starting up the simulation';
+                    startButton.disabled = false
+                    stopButton.disabled = true
+                });
+    }
+
+    function stopSim(endpoint) {
+        const statusLabel = document.getElementById('status_label');
+        statusLabel.textContent = 'Stopping simulation';
+        const startButton = document.getElementById('start_button')
+        const stopButton = document.getElementById('stop_button')
+        const resetButton = document.getElementById('reset_button')
+        startButton.disabled = false
+        stopButton.disabled = true
+        resetButton.disabled = false
+        const select = document.getElementById("scenario");
+        const flags = document.getElementById("flags");
+        scenario.disabled = false
+        flags.disabled = false
+        setFlags()
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    statusLabel.textContent = 'Simulation stopped';
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    statusLabel.textContent = 'Error encountered while stopping the simulation';
+
+                });
+    }
+
+    function resetSim(endpoint) {
+        const statusLabel = document.getElementById('status_label');
+        statusLabel.textContent = 'Resetting simulation';
+        const resetButton = document.getElementById('reset_button')
+        resetButton.disabled = true
+        const sim_id_label = document.getElementById('simid_label')
+        sim_id_label.textContent = "off"
+        const esStatusLabel = document.getElementById('es_status_label')
+        esStatusLabel.textContent = "off"
+        const esChart = Chart.getChart('es-mode-chart');
+        esChart.data.datasets = [];
+        esChart.update();
+        const sinrChart = Chart.getChart('sinr-chart');
+        sinrChart.data.datasets = [];
+        sinrChart.update();
+        const retxChart = Chart.getChart('retx-chart');
+        retxChart.data.datasets = [];
+        retxChart.update();
+        const prbChart = Chart.getChart('prb-usage-chart');
+        prbChart.data.datasets = [];
+        prbChart.update();
+        const diffChart = Chart.getChart('es_diff');
+        diffChart.data.datasets = [];
+        diffChart.update();
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    statusLabel.textContent = 'off';
+
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    statusLabel.textContent = 'Error encountered while resetting the simulation';
+                });
+    }
+
+
+    function startEs() {
+        const esStatusLabel = document.getElementById('es_status_label');
+        esStatusLabel.textContent = 'Sending start request to the xApp';
+
+        const url = `http://${host_ns3}:38868`;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain'
+            },
+            body: 'start'
+        })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.text();
+                })
+                .then(responseText => {
+                    console.log('Response text:', responseText);
+                    if (responseText.trim() === 'xApp process started.') {
+                        esStatusLabel.textContent = 'ES xApp started';
+                    } else {
+                        esStatusLabel.textContent = `Unexpected response: ${responseText}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    esStatusLabel.textContent = 'Unexpected error has occurred.';
+                });
+    }
+
+    function stopEs() {
+        const esStatusLabel = document.getElementById('es_status_label');
+        esStatusLabel.textContent = 'Sending stop request to the xApp';
+
+        const url = `http://${host_ns3}:38869`;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain'
+            },
+            body: 'stop'
+        })
+                .then(response => {
+                    if (response.ok) {
+                        esStatusLabel.textContent = 'ES xApp stopped.';
+                    } else {
+                        esStatusLabel.textContent = 'Unexpected error has occurred.';
+                    }
+                })
+                .catch(error => {
+                    if (error.name === 'AbortError') {
+                        esStatusLabel.textContent = 'Connection timed out, try again later.';
+                    } else {
+                        console.error('Error:', error);
+                        esStatusLabel.textContent = 'Unexpected error has occurred.';
+                    }
+                });
+    }
+
+
+    function formatAndDisplayCellData(data) {
+        return data.map(cell => {
+            return `<div class="object-box">${Object.entries(cell)
+                    .map(([key, value]) => `${key}: <span class="value">${value === null || value === "" ? "N/A" : value}</span>`
+        )
+        .
+            join("<br>")
+        }
+    </div>
+        `;
+                    }).join("");
+                }
+</script>
+</body>
+</html>
