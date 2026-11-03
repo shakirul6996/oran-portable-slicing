@@ -1,5 +1,14 @@
 # Portable O-RAN + Open5GS Slicing Demo
 
+## Requirements
+
+```text
+OS: Ubuntu Linux
+Architecture: x86_64
+Docker: Docker Engine with Docker Compose v2
+Kernel support: SCTP enabled
+```
+
 ## Quick Start
 
 ```Clone the repository:
