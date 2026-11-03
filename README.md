@@ -9,23 +9,29 @@ Docker: Docker Engine with Docker Compose v2
 Kernel support: SCTP enabled
 ```
 ## Quick Start
-```
-Clone the repository:
+```Clone the repository:
 
-    git clone https://github.com/shakirul6996/oran-portable-slicing.git
-    cd oran-portable-slicing
+```bash
+git clone -b portable-final https://github.com/shakirul6996/oran-portable-slicing.git
+cd oran-portable-slicing
+```
 
 First-time setup:
 
-    ./setup.sh
+```bash
+docker compose pull
+```
 
 Start the simulator:
 
-    ./run.sh
+```bash
+./run.sh
+```
 
 The dashboard opens automatically at:
 
-    http://127.0.0.1:8000
+http://127.0.0.1:8000
+
 ```
 ## Components
 
