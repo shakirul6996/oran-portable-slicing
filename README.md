@@ -2,6 +2,32 @@
 
 ## Quick Start
 
+```Clone the repository:
+git clone -b portable-final https://github.com/shakirul6996/oran-portable-slicing.git
+cd oran-portable-slicing
+```
+
+First-time setup:
+
+```bash
+docker compose pull
+```
+
+Start the simulator:
+
+```bash
+chmod +x run.sh
+./run.sh
+```
+
+The dashboard opens automatically at:
+```bash
+http://127.0.0.1:8000
+```
+
+
+...## Quick Start
+
 Clone the repository:
 
     git clone https://github.com/shakirul6996/oran-portable-slicing.git
@@ -17,7 +43,7 @@ Start the simulator:
 
 The dashboard opens automatically at:
 
-    http://127.0.0.1:8000
+...    http://127.0.0.1:8000
 
 ## Components
 
