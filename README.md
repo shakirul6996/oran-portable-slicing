@@ -9,9 +9,8 @@ Docker: Docker Engine with Docker Compose v2
 Kernel support: SCTP enabled
 ```
 ## Quick Start
-```Clone the repository:
 
-```bash
+```Clone the repository:
 git clone -b portable-final https://github.com/shakirul6996/oran-portable-slicing.git
 cd oran-portable-slicing
 ```
