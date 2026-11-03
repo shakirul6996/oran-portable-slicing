@@ -12,7 +12,8 @@ Kernel support: SCTP enabled
 
 ## Quick Start
 
-```Clone the repository:
+Clone the repository:
+```bash
 git clone -b portable-final https://github.com/shakirul6996/oran-portable-slicing.git
 cd oran-portable-slicing
 ```
