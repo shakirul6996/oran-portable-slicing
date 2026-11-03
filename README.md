@@ -1,4 +1,5 @@
-# Portable O-RAN + Open5GS Slicing 
+# Portable O-RAN + Open5GS Slicing Demo
+A Docker-based portable O-RAN simulation environment integrating ns-3, Open5GS, FlexRIC, InfluxDB, and a web-based dashboard for runtime network slicing experiments.
 
 ## Requirements
 
@@ -8,6 +9,7 @@ Architecture: x86_64
 Docker: Docker Engine with Docker Compose v2
 Kernel support: SCTP enabled
 ```
+
 ## Quick Start
 
 ```Clone the repository:
@@ -33,14 +35,35 @@ The dashboard opens automatically at:
 http://127.0.0.1:8000
 ```
 
+<!--
+## Quick Start
+
+Clone the repository:
+
+    git clone https://github.com/shakirul6996/oran-portable-slicing.git
+    cd oran-portable-slicing
+
+First-time setup:
+
+    ./setup.sh
+
+Start the simulator:
+
+    ./run.sh
+
+The dashboard opens automatically at:
+
+...    http://127.0.0.1:8000
+-->
 ## Components
 
-- ns-3 mmWave/LENA
-- Open5GS
-- FlexRIC Near-RT RIC
-- E2SM-RC runtime slicing
-- InfluxDB
-- Web GUI
+- ns-3 mmWave/LENA: Radio access network simulation
+- Open5GS: 5G Core network with AMF, SMF, and UPF
+- FlexRIC Near-RT RIC: RAN control and xApp integration
+- E2SM-RC: Runtime slicing policy control
+- InfluxDB: Storage of simulation telemetry and KPIs
+- Web GUI: Simulation configuration, visualization, and slicing controls
+
 
 ## Note
 
@@ -53,7 +76,7 @@ If Docker asks for permission to download private images, run:
 
 and then run:
 
-    ./setup.sh
+    docker compose pull
     
     
  Start the slicing simulation
@@ -65,7 +88,7 @@ In the dashboard:
 3. Click **Start new**
 4. Open the **Slicing** tab
 
-Wait until Open5GS, N2/NGAP and N3/GTP-U become active.
+Note: N2/N3 connection establishment and simulation startup may take some time. The GUI's initial Waiting state is expected before the simulation starts.
 
 The initial policy is:
 
@@ -75,7 +98,7 @@ Slice 2: 30%
 Slice 3: 20%
 ```
 
-## Apply a runtime slicing policy
+## 6. Apply a runtime slicing policy
 
 Enter three ratios whose total is `100`.
 
@@ -111,7 +134,7 @@ Control path:
 GUI -> FlexRIC xApp -> E2SM-RC -> ns-3 gNB
 ```
 
-##  Stop the simulation
+## 7. Stop the simulation
 
 Click **Stop** in the dashboard.
 
