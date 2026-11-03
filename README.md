@@ -25,8 +25,8 @@ The dashboard opens automatically at:
 http://127.0.0.1:8000
 ```
 
-
-...## Quick Start
+<!--
+## Quick Start
 
 Clone the repository:
 
@@ -44,7 +44,7 @@ Start the simulator:
 The dashboard opens automatically at:
 
 ...    http://127.0.0.1:8000
-
+-->
 ## Components
 
 - ns-3 mmWave/LENA
