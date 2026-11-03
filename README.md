@@ -26,10 +26,10 @@ Start the simulator:
 ```bash
 chmod +x run.sh
 ./run.sh
-
+```
 
 The dashboard opens automatically at:
-
+```bash
 http://127.0.0.1:8000
 ```
 
