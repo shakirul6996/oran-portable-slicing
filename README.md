@@ -24,6 +24,7 @@ docker compose pull
 Start the simulator:
 
 ```bash
+chmod +x run.sh
 ./run.sh
 ```
 
